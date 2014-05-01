@@ -39,15 +39,31 @@ object SingleTriangle {
 
     val attr = Array((0, 3), (3, 3))
 
-    while (!Display.isCloseRequested) {
-      for {
-        _   <- using.program(pp)
-        acc <- using.attributebuffer(mb)
-      } {
-        GL11.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
-        raster.clear(GL11.GL_COLOR_BUFFER_BIT)
+    var prevTime = System.currentTimeMillis
+    val dts = new Array[Long](32)
+    var dtCount = 0
 
-        acc.render(GL11.GL_TRIANGLES, attr)
+    while (!Display.isCloseRequested) {
+      val currentTime = System.currentTimeMillis
+      val dt = currentTime - prevTime
+      prevTime = currentTime
+
+      dts(dtCount) = dt
+      dtCount = (dtCount + 1) % dts.length
+      if (dtCount == 0) {
+        println(dts.sum / dts.length.toDouble)
+      }
+
+      for (i <- 1 to 1 << 12) {
+        for {
+          _   <- using.programRegular(pp)
+          acc <- using.attributebufferRegular(mb)
+        } {
+          GL11.glClearColor(1.0f, 1.0f, 1.0f, 1.0f)
+          raster.clear(GL11.GL_COLOR_BUFFER_BIT)
+
+          acc.render(GL11.GL_TRIANGLES, attr)
+        }
       }
 
       Display.update()

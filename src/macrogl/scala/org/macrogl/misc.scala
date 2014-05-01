@@ -114,6 +114,31 @@ package macrogl {
       def foreach[U](f: MeshBuffer.Access => U)(implicit gl: Macrogl): Unit = macro MeshBuffer.using[U]
     }
 
+    class ShaderProgramRegular(p: Program) {
+      def foreach[U](f: Unit => U)(implicit gl: Macrogl): Unit = {
+        val opidx = gl.getCurrentProgram()
+        if (gl.differentPrograms(opidx, p.token)) {
+          gl.useProgram(p.token)
+        }
+        try f(())
+        finally if (gl.differentPrograms(opidx, p.token)) {
+          gl.useProgram(opidx)
+        }
+      }
+    }
+    class AttributeBufferObjectRegular(m: AttributeBuffer) {
+      def foreach[U](f: AttributeBuffer.Access => U)(implicit gl: Macrogl): Unit = {
+        gl.bindBuffer(Macrogl.GL_ARRAY_BUFFER, m.token)
+        try f(m.access)
+        finally {
+          gl.bindBuffer(Macrogl.GL_ARRAY_BUFFER, Token.Buffer.none)
+        }
+      }
+    }
+
+    def programRegular(p: Program) = new ShaderProgramRegular(p)
+    def attributebufferRegular(mesh: AttributeBuffer) = new AttributeBufferObjectRegular(mesh)
+
     def program(p: Program) = ShaderProgram
     def matrix(m: Matrix) = TransformationMatrix
     def texture(texnum: Int, t: Texture) = TextureObject
